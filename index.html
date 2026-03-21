@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Radio Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  .player {
+    width: 820px;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+  }
+
+  /* THEMES (TEXT ONLY) */
+  body.light { color: #000; }
+  body.dark { color: #fff; }
+
+  .left { max-width: 60%; }
+
+  .logo {
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+
+  .tagline {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-bottom: 20px;
+  }
+
+  .on-air {
+    font-size: 11px;
+    opacity: 0.6;
+  }
+
+  .show {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 5px;
+  }
+
+  .time {
+    font-size: 14px;
+    opacity: 0.7;
+  }
+
+  .play-btn {
+    margin-top: 20px;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    border: 2px solid currentColor;
+  }
+
+  .play-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-40%, -50%);
+    border-left: 14px solid currentColor;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+  }
+
+  .playing::before {
+    border: none;
+    width: 14px;
+    height: 18px;
+    background: currentColor;
+    box-shadow: 7px 0 0 currentColor;
+    transform: translate(-50%, -50%);
+  }
+
+  .right {
+    text-align: center;
+  }
+
+  .cover {
+    width: 160px;
+    height: 160px;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    margin-bottom: 10px;
+  }
+
+  .track { font-weight: bold; }
+  .artist { font-size: 14px; opacity: 0.7; }
+
+  .error {
+    color: red;
+    font-size: 18px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="player">
+  <div class="left">
+    <div class="logo">Radio Player</div>
+    <div class="tagline">Live Stream</div>
+
+    <div class="on-air">NOW PLAYING</div>
+    <div class="show" id="track">Loading...</div>
+    <div class="time" id="artist">Please wait</div>
+
+    <div id="playBtn" class="play-btn"></div>
+  </div>
+
+  <div class="right">
+    <div class="cover" id="cover"></div>
+  </div>
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+/* =========================
+   PARAMS
+========================= */
+const params = new URLSearchParams(window.location.search);
+
+const streamURL = params.get("stream");
+const metaURL = params.get("meta");
+const theme = params.get("theme") || "light";
+const licenseKey = params.get("license");
+
+/* =========================
+   THEME
+========================= */
+document.body.classList.add(theme === "dark" ? "dark" : "light");
+
+/* =========================
+   AUDIO
+========================= */
+const audio = document.getElementById("audio");
+const playBtn = document.getElementById("playBtn");
+
+audio.src = streamURL;
+
+playBtn.addEventListener("click", () => {
+  if (audio.paused) {
+    audio.play();
+    playBtn.classList.add("playing");
+  } else {
+    audio.pause();
+    playBtn.classList.remove("playing");
+  }
+});
+
+/* =========================
+   LICENSE
+========================= */
+async function validateLicense(key) {
+  try {
+    const res = await fetch("licenses.json");
+    const data = await res.json();
+
+    const license = data.licenses.find(l => l.key === key);
+    if (!license) return false;
+
+    return new Date() <= new Date(license.expires);
+
+  } catch {
+    return false;
+  }
+}
+
+/* =========================
+   METADATA
+========================= */
+let lastSong = "";
+
+async function fetchMetadata() {
+  try {
+    const res = await fetch(metaURL);
+    const data = await res.json();
+
+    const song = data.icestats.source.title || "";
+    if (!song || song === lastSong) return;
+
+    lastSong = song;
+
+    let artist = "";
+    let track = song;
+
+    if (song.includes(" - ")) {
+      [artist, track] = song.split(" - ");
+    }
+
+    track = track.replace(/\(.*?\)/g, "").trim();
+
+    document.getElementById("track").textContent = track;
+    document.getElementById("artist").textContent = artist;
+
+    fetchArtwork(artist, track);
+
+  } catch (err) {
+    console.log("Metadata error", err);
+  }
+}
+
+async function fetchArtwork(artist, track) {
+  try {
+    const query = encodeURIComponent(`${artist} ${track}`);
+    const url = `https://itunes.apple.com/search?term=${query}&entity=song&limit=1`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.results && data.results.length > 0) {
+      let artwork = data.results[0].artworkUrl100;
+      artwork = artwork.replace("100x100", "500x500");
+
+      document.getElementById("cover").style.backgroundImage = `url(${artwork})`;
+    }
+
+  } catch {}
+}
+
+/* =========================
+   INIT
+========================= */
+(async () => {
+
+  if (!streamURL || !metaURL) {
+    document.body.innerHTML = "<div class='error'>Missing stream or metadata URL</div>";
+    return;
+  }
+
+  if (!licenseKey) {
+    document.body.innerHTML = "<div class='error'>Missing license key</div>";
+    return;
+  }
+
+  const valid = await validateLicense(licenseKey);
+
+  if (!valid) {
+    document.body.innerHTML = "<div class='error'>License invalid or expired</div>";
+    return;
+  }
+
+  fetchMetadata();
+  setInterval(fetchMetadata, 10000);
+
+})();
+</script>
+
+</body>
+</html>
