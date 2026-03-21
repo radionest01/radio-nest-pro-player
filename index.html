@@ -9,13 +9,14 @@
   body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: #f5f5f5;
+    background: transparent;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
   }
 
+  /* GLASS PLAYER */
   .player {
     width: 100%;
     max-width: 1000px;
@@ -23,9 +24,26 @@
     align-items: center;
     justify-content: space-between;
     padding: 30px;
+
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25);
   }
 
-  /* LEFT SIDE */
+  body.dark .player {
+    background: rgba(0, 0, 0, 0.25);
+    color: #fff;
+  }
+
+  body.light .player {
+    color: #000;
+  }
+
+  /* LEFT CONTENT */
   .content {
     flex: 1;
     max-width: 600px;
@@ -36,12 +54,12 @@
   }
 
   .logo {
-    margin-bottom: 25px; /* spacing from text */
+    margin-bottom: 25px;
   }
 
   .on-air {
     font-size: 12px;
-    color: #777;
+    opacity: 0.7;
     margin-bottom: 5px;
   }
 
@@ -49,12 +67,11 @@
     font-size: 28px;
     font-weight: 700;
     margin-bottom: 5px;
-    color: #111;
   }
 
   .artist {
     font-size: 16px;
-    color: #666;
+    opacity: 0.8;
     margin-bottom: 20px;
   }
 
@@ -69,7 +86,7 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: #111;
+    border: 2px solid currentColor;
     cursor: pointer;
     position: relative;
   }
@@ -79,7 +96,7 @@
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-40%, -50%);
-    border-left: 14px solid white;
+    border-left: 14px solid currentColor;
     border-top: 9px solid transparent;
     border-bottom: 9px solid transparent;
   }
@@ -88,17 +105,17 @@
     border: none;
     width: 10px;
     height: 16px;
-    background: white;
-    box-shadow: 6px 0 0 white;
+    background: currentColor;
+    box-shadow: 6px 0 0 currentColor;
     transform: translate(-50%, -50%);
   }
 
   .showtime {
     font-size: 14px;
-    color: #777;
+    opacity: 0.7;
   }
 
-  /* RIGHT SIDE (ALBUM ART) */
+  /* RIGHT ARTWORK */
   .cover {
     width: 240px;
     height: 240px;
@@ -106,9 +123,9 @@
     background-size: cover;
     background-position: center;
     position: relative;
+    flex-shrink: 0;
   }
 
-  /* OPTIONAL TEXT OVER ART */
   .cover-info {
     position: absolute;
     bottom: 0;
@@ -121,6 +138,7 @@
 
   .error {
     color: red;
+    font-size: 18px;
   }
 
   /* MOBILE */
@@ -174,10 +192,13 @@ const streamURL = params.get("stream");
 const metaURL = params.get("meta");
 const licenseKey = params.get("license");
 const logoURL = params.get("logo");
+const theme = params.get("theme") || "light";
+
+/* THEME */
+document.body.classList.add(theme);
 
 /* LOGO */
 const logoContainer = document.getElementById("logoContainer");
-
 if (logoURL) {
   logoContainer.innerHTML = `<img src="${logoURL}" alt="Logo">`;
 }
@@ -237,7 +258,6 @@ async function fetchMetadata() {
 
     document.getElementById("track").textContent = track;
     document.getElementById("artist").textContent = artist;
-
     document.getElementById("coverTrack").textContent = track;
     document.getElementById("coverArtist").textContent = artist;
 
