@@ -9,7 +9,7 @@
   body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #c2185b, #d32f2f);
+    background: #f5f5f5;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -18,76 +18,58 @@
 
   .player {
     width: 100%;
-    max-width: 850px;
+    max-width: 1000px;
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding: 20px;
-    color: #fff;
+    justify-content: space-between;
+    padding: 30px;
   }
 
-  /* ARTWORK */
-  .cover {
-    width: 260px;
-    height: 260px;
-    border-radius: 14px;
-    background-size: cover;
-    background-position: center;
-    flex-shrink: 0;
-  }
-
-  /* RIGHT SIDE */
-  .left {
+  /* LEFT SIDE */
+  .content {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    max-width: 600px;
   }
 
-  /* LOGO */
   .logo img {
-    max-height: 50px;
-    margin-bottom: 12px;
+    max-height: 70px;
   }
 
   .logo {
-    font-size: 26px;
-    font-weight: bold;
+    margin-bottom: 25px; /* spacing from text */
   }
 
-  .tagline {
-    font-size: 13px;
-    opacity: 0.7;
-    margin-bottom: 10px;
-  }
-
-  /* NOW PLAYING */
   .on-air {
-    font-size: 11px;
-    opacity: 0.6;
-    margin-bottom: 4px;
+    font-size: 12px;
+    color: #777;
+    margin-bottom: 5px;
   }
 
-  .show {
-    font-size: 32px;
+  .track {
+    font-size: 28px;
     font-weight: 700;
-    line-height: 1.1;
-    margin: 0;
+    margin-bottom: 5px;
+    color: #111;
   }
 
-  .time {
-    font-size: 20px;
-    margin-top: 4px;
-    opacity: 0.8;
+  .artist {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 20px;
   }
 
   /* PLAY BUTTON */
+  .play-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
   .play-btn {
-    margin-top: 15px;
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    border: 2px solid #fff;
+    background: #111;
     cursor: pointer;
     position: relative;
   }
@@ -97,23 +79,48 @@
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-40%, -50%);
-    border-left: 20px solid white;
-    border-top: 12px solid transparent;
-    border-bottom: 12px solid transparent;
+    border-left: 14px solid white;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
   }
 
   .playing::before {
     border: none;
-    width: 18px;
-    height: 22px;
+    width: 10px;
+    height: 16px;
     background: white;
-    box-shadow: 8px 0 0 white;
+    box-shadow: 6px 0 0 white;
     transform: translate(-50%, -50%);
+  }
+
+  .showtime {
+    font-size: 14px;
+    color: #777;
+  }
+
+  /* RIGHT SIDE (ALBUM ART) */
+  .cover {
+    width: 240px;
+    height: 240px;
+    border-radius: 12px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+
+  /* OPTIONAL TEXT OVER ART */
+  .cover-info {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: #fff;
+    font-size: 13px;
   }
 
   .error {
     color: red;
-    font-size: 18px;
   }
 
   /* MOBILE */
@@ -124,16 +131,7 @@
     }
 
     .cover {
-      width: 220px;
-      height: 220px;
-    }
-
-    .show {
-      font-size: 26px;
-    }
-
-    .time {
-      font-size: 18px;
+      margin-top: 20px;
     }
   }
 </style>
@@ -142,18 +140,29 @@
 <body>
 
 <div class="player">
-  <div class="cover" id="cover"></div>
 
-  <div class="left">
+  <!-- LEFT -->
+  <div class="content">
     <div class="logo" id="logoContainer">Radio Player</div>
-    <div class="tagline" id="tagline">Live Stream</div>
 
-    <div class="on-air">NOW PLAYING</div>
-    <div class="show" id="track">Loading...</div>
-    <div class="time" id="artist">Please wait</div>
+    <div class="on-air">ON AIR NOW</div>
+    <div class="track" id="track">Loading...</div>
+    <div class="artist" id="artist">Please wait</div>
 
-    <div id="playBtn" class="play-btn"></div>
+    <div class="play-row">
+      <div id="playBtn" class="play-btn"></div>
+      <div class="showtime">Live Stream</div>
+    </div>
   </div>
+
+  <!-- RIGHT -->
+  <div class="cover" id="cover">
+    <div class="cover-info">
+      <div id="coverTrack"></div>
+      <div id="coverArtist"></div>
+    </div>
+  </div>
+
 </div>
 
 <audio id="audio"></audio>
@@ -168,11 +177,9 @@ const logoURL = params.get("logo");
 
 /* LOGO */
 const logoContainer = document.getElementById("logoContainer");
-const tagline = document.getElementById("tagline");
 
 if (logoURL) {
   logoContainer.innerHTML = `<img src="${logoURL}" alt="Logo">`;
-  tagline.style.display = "none";
 }
 
 /* AUDIO */
@@ -230,6 +237,9 @@ async function fetchMetadata() {
 
     document.getElementById("track").textContent = track;
     document.getElementById("artist").textContent = artist;
+
+    document.getElementById("coverTrack").textContent = track;
+    document.getElementById("coverArtist").textContent = artist;
 
     fetchArtwork(artist, track);
 
