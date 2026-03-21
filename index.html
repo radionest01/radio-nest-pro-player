@@ -18,36 +18,45 @@
 
   .player {
     width: 100%;
-    max-width: 1000px;
+    max-width: 900px;
     display: flex;
-    justify-content: space-between;
-    padding: 30px;
+    align-items: center;
+    gap: 30px;
+    padding: 20px;
   }
 
   /* THEMES */
   body.light { color: #000; }
   body.dark { color: #fff; }
 
-  .left { max-width: 55%; }
+  .left {
+    flex: 1;
+  }
+
+  .logo img {
+    max-height: 60px;
+    max-width: 220px;
+    object-fit: contain;
+  }
 
   .logo {
-    font-size: 32px;
+    font-size: 26px;
     font-weight: bold;
   }
 
   .tagline {
-    font-size: 15px;
+    font-size: 14px;
     opacity: 0.7;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
   }
 
   .on-air {
-    font-size: 13px;
+    font-size: 12px;
     opacity: 0.6;
   }
 
   .show {
-    font-size: 36px;
+    font-size: 34px;
     font-weight: 700;
     margin-top: 5px;
     line-height: 1.2;
@@ -59,13 +68,13 @@
   }
 
   .play-btn {
-    margin-top: 25px;
-    width: 65px;
-    height: 65px;
+    margin-top: 20px;
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
+    border: 2px solid currentColor;
     cursor: pointer;
     position: relative;
-    border: 2px solid currentColor;
   }
 
   .play-btn::before {
@@ -73,7 +82,7 @@
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-40%, -50%);
-    border-left: 18px solid currentColor;
+    border-left: 20px solid currentColor;
     border-top: 12px solid transparent;
     border-bottom: 12px solid transparent;
   }
@@ -83,31 +92,17 @@
     width: 18px;
     height: 22px;
     background: currentColor;
-    box-shadow: 9px 0 0 currentColor;
+    box-shadow: 8px 0 0 currentColor;
     transform: translate(-50%, -50%);
   }
 
-  .right {
-    text-align: center;
-  }
-
   .cover {
-    width: 300px;
-    height: 300px;
-    border-radius: 14px;
+    width: 280px;
+    height: 280px;
+    border-radius: 12px;
     background-size: cover;
     background-position: center;
-    margin-bottom: 10px;
-  }
-
-  .track {
-    font-size: 20px;
-    font-weight: bold;
-  }
-
-  .artist {
-    font-size: 16px;
-    opacity: 0.7;
+    flex-shrink: 0;
   }
 
   .error {
@@ -115,16 +110,11 @@
     font-size: 18px;
   }
 
-  /* Responsive */
-  @media (max-width: 800px) {
+  /* MOBILE */
+  @media (max-width: 700px) {
     .player {
       flex-direction: column;
-      align-items: center;
       text-align: center;
-    }
-
-    .left {
-      max-width: 100%;
     }
 
     .cover {
@@ -133,7 +123,7 @@
     }
 
     .show {
-      font-size: 28px;
+      font-size: 26px;
     }
 
     .time {
@@ -146,19 +136,17 @@
 <body>
 
 <div class="player">
+  <div class="cover" id="cover"></div>
+
   <div class="left">
-    <div class="logo">Radio Player</div>
-    <div class="tagline">Live Stream</div>
+    <div class="logo" id="logoContainer">Radio Player</div>
+    <div class="tagline" id="tagline">Live Stream</div>
 
     <div class="on-air">NOW PLAYING</div>
     <div class="show" id="track">Loading...</div>
     <div class="time" id="artist">Please wait</div>
 
     <div id="playBtn" class="play-btn"></div>
-  </div>
-
-  <div class="right">
-    <div class="cover" id="cover"></div>
   </div>
 </div>
 
@@ -171,15 +159,27 @@ const streamURL = params.get("stream");
 const metaURL = params.get("meta");
 const theme = params.get("theme") || "light";
 const licenseKey = params.get("license");
+const logoURL = params.get("logo");
 
+/* THEME */
 document.body.classList.add(theme === "dark" ? "dark" : "light");
 
+/* LOGO */
+const logoContainer = document.getElementById("logoContainer");
+const tagline = document.getElementById("tagline");
+
+if (logoURL) {
+  logoContainer.innerHTML = `<img src="${logoURL}" alt="Station Logo">`;
+  tagline.style.display = "none"; // hide "Live Stream"
+}
+
+/* AUDIO */
 const audio = document.getElementById("audio");
 const playBtn = document.getElementById("playBtn");
 
 audio.src = streamURL;
 
-playBtn.addEventListener("click", () => {
+playBtn.onclick = () => {
   if (audio.paused) {
     audio.play();
     playBtn.classList.add("playing");
@@ -187,8 +187,9 @@ playBtn.addEventListener("click", () => {
     audio.pause();
     playBtn.classList.remove("playing");
   }
-});
+};
 
+/* LICENSE */
 async function validateLicense(key) {
   try {
     const res = await fetch("licenses.json");
@@ -198,12 +199,12 @@ async function validateLicense(key) {
     if (!license) return false;
 
     return new Date() <= new Date(license.expires);
-
   } catch {
     return false;
   }
 }
 
+/* METADATA */
 let lastSong = "";
 
 async function fetchMetadata() {
@@ -230,9 +231,7 @@ async function fetchMetadata() {
 
     fetchArtwork(artist, track);
 
-  } catch (err) {
-    console.log("Metadata error", err);
-  }
+  } catch {}
 }
 
 async function fetchArtwork(artist, track) {
@@ -243,9 +242,9 @@ async function fetchArtwork(artist, track) {
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data.results && data.results.length > 0) {
+    if (data.results.length > 0) {
       let artwork = data.results[0].artworkUrl100;
-      artwork = artwork.replace("100x100", "500x500");
+      artwork = artwork.replace("100x100", "600x600");
 
       document.getElementById("cover").style.backgroundImage = `url(${artwork})`;
     }
@@ -253,22 +252,23 @@ async function fetchArtwork(artist, track) {
   } catch {}
 }
 
+/* INIT */
 (async () => {
 
   if (!streamURL || !metaURL) {
-    document.body.innerHTML = "<div class='error'>Missing stream or metadata URL</div>";
+    document.body.innerHTML = "<div class='error'>Missing stream/meta</div>";
     return;
   }
 
   if (!licenseKey) {
-    document.body.innerHTML = "<div class='error'>Missing license key</div>";
+    document.body.innerHTML = "<div class='error'>Missing license</div>";
     return;
   }
 
   const valid = await validateLicense(licenseKey);
 
   if (!valid) {
-    document.body.innerHTML = "<div class='error'>License invalid or expired</div>";
+    document.body.innerHTML = "<div class='error'>License invalid/expired</div>";
     return;
   }
 
