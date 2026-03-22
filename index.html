@@ -43,7 +43,6 @@ body.light .player { background: rgba(0,0,0,0.35); }
 .on-air {
   font-size: 14px;
   opacity: 0.7;
-  margin-bottom: 8px;
 }
 
 .track {
@@ -116,6 +115,7 @@ body.light .volume input { background: rgba(255,255,255,0.3); }
   background-size: cover;
   background-position: center;
   position: relative;
+  overflow: hidden; /* ✅ FIXED */
 }
 
 .cover-info {
@@ -204,7 +204,7 @@ body.light .volume input { background: rgba(255,255,255,0.3); }
         </svg>
         <svg id="icon-muted" viewBox="0 0 24 24" width="20" style="display:none;">
           <path fill="currentColor"
-            d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0 .77-.2 1.5-.55 2.13l1.46 1.46A5.97 5.97 0 0018.5 12c0-1.77-1-3.29-2.5-4.03v1.67zM19 3l-2 2-2-2-1.5 1.5 2 2-2 2L15 10l2-2 2 2L20.5 8l-2-2 2-2z"/>
+            d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0 .77-.2 1.5-.55 2.13l1.46 1.46A5.97 5.97 0 0018.5 12c0-1.77-1-3.29-2.5-4.03v1.67z"/>
         </svg>
       </button>
 
@@ -244,7 +244,7 @@ if (logoURL) {
 
 const audio = document.getElementById("audio");
 
-/* PLAY HARD RESET */
+/* PLAY */
 const playBtn = document.getElementById("playBtn");
 
 playBtn.onclick = async (e) => {
@@ -281,7 +281,7 @@ audio.addEventListener("error", () => {
     setTimeout(() => {
       audio.src = streamURL + "?t=" + Date.now();
       audio.load();
-      audio.play().catch(() => {});
+      audio.play().catch(()=>{});
     }, 3000);
   }
 });
@@ -308,13 +308,10 @@ volumeSlider.addEventListener("input", () => {
 function updateSlider() {
   const percent = volumeSlider.value * 100;
 
-  if (document.body.classList.contains("dark")) {
-    volumeSlider.style.background =
-      `linear-gradient(to right, #000 ${percent}%, rgba(0,0,0,0.2) ${percent}%)`;
-  } else {
-    volumeSlider.style.background =
-      `linear-gradient(to right, #fff ${percent}%, rgba(255,255,255,0.3) ${percent}%)`;
-  }
+  volumeSlider.style.background =
+    document.body.classList.contains("dark")
+      ? `linear-gradient(to right, #000 ${percent}%, rgba(0,0,0,0.2) ${percent}%)`
+      : `linear-gradient(to right, #fff ${percent}%, rgba(255,255,255,0.3) ${percent}%)`;
 }
 updateSlider();
 
@@ -331,42 +328,50 @@ function ripple(e, el) {
   setTimeout(() => span.remove(), 600);
 }
 
+/* MEDIA SESSION */
+function updateMediaSession(track, artist, artwork) {
+  if ("mediaSession" in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track,
+      artist: artist,
+      artwork: [
+        { src: artwork, sizes: "512x512", type: "image/png" }
+      ]
+    });
+  }
+}
+
 /* FALLBACK */
 const FALLBACK = "https://i.ibb.co/8DwvZS9Z/ON-AIR-Fallback-Album-Art.png";
 
 function setFallback() {
   document.getElementById("cover").style.backgroundImage = `url(${FALLBACK})`;
+  updateMediaSession("Live Stream", "", FALLBACK);
 }
 
-/* 🔥 DEEP SEARCH ARTWORK */
+/* DEEP SEARCH */
 async function fetchArtwork(artist, track) {
+  updateMediaSession(track, artist, FALLBACK);
+
   try {
     const clean = str => str.toLowerCase()
       .replace(/\(.*?\)|\[.*?\]/g, "")
       .replace(/[^a-z0-9 ]/g, "")
       .trim();
 
-    const cleanArtist = clean(artist);
-    const cleanTrack = clean(track);
-
     const queries = [`${artist} ${track}`, track, artist];
 
     for (let q of queries) {
       const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=10`);
       const data = await res.json();
-      if (!data.results.length) continue;
 
       let best = null, bestScore = 0;
 
       data.results.forEach(item => {
-        const a = clean(item.artistName || "");
-        const t = clean(item.trackName || "");
-
         let score = 0;
-        if (a.includes(cleanArtist)) score += 2;
-        if (t.includes(cleanTrack)) score += 2;
-        if (cleanArtist.includes(a)) score += 1;
-        if (cleanTrack.includes(t)) score += 1;
+
+        if (clean(item.artistName).includes(clean(artist))) score += 2;
+        if (clean(item.trackName).includes(clean(track))) score += 2;
 
         if (score > bestScore) {
           bestScore = score;
@@ -377,6 +382,7 @@ async function fetchArtwork(artist, track) {
       if (best && bestScore >= 2) {
         const art = best.artworkUrl100.replace("100x100","600x600");
         document.getElementById("cover").style.backgroundImage = `url(${art})`;
+        updateMediaSession(track, artist, art);
         return;
       }
     }
@@ -388,7 +394,7 @@ async function fetchArtwork(artist, track) {
   }
 }
 
-/* METADATA */
+/* META */
 async function fetchMeta() {
   try {
     const res = await fetch(metaURL);
@@ -401,9 +407,6 @@ async function fetchMeta() {
     if (song.includes(" - ")) {
       [artist, track] = song.split(" - ");
     }
-
-    track = track.replace(/\(.*?\)/g, "").trim();
-    artist = artist.trim();
 
     document.getElementById("track").textContent = track;
     document.getElementById("artist").textContent = artist;
