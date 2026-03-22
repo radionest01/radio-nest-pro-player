@@ -5,16 +5,19 @@
 <title>Radio Player</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+
 <style>
 html, body {
   margin: 0;
   padding: 0;
   background: transparent;
-  font-family: Arial, sans-serif;
+  font-family: 'Montserrat', sans-serif;
 }
 
-/* HERO CONTAINER */
+/* PLAYER */
 .player {
+  position: relative;
   width: 100%;
   max-width: 1200px;
   margin: 40px auto;
@@ -22,7 +25,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
 
-  padding: 50px 60px; /* 🔥 BIGGER */
+  padding: 50px 60px;
   border-radius: 30px;
 
   background: linear-gradient(
@@ -45,28 +48,24 @@ html, body {
   max-width: 650px;
 }
 
-/* LOGO */
 .logo img {
-  max-height: 80px; /* 🔥 BIGGER */
+  max-height: 80px;
 }
 
 .logo {
   margin-bottom: 35px;
 }
 
-/* TEXT */
 .on-air {
   font-size: 14px;
   opacity: 0.7;
   margin-bottom: 10px;
-  letter-spacing: 1px;
 }
 
 .track {
-  font-size: 48px; /* 🔥 BIG */
+  font-size: 48px;
   font-weight: 800;
   margin-bottom: 10px;
-  line-height: 1.1;
 }
 
 .artist {
@@ -75,7 +74,7 @@ html, body {
   margin-bottom: 30px;
 }
 
-/* PLAY ROW */
+/* PLAY */
 .play-row {
   display: flex;
   align-items: center;
@@ -115,24 +114,51 @@ html, body {
   opacity: 0.8;
 }
 
-/* RIGHT ARTWORK */
+/* ARTWORK */
 .cover {
-  width: 340px;   /* 🔥 BIGGER */
+  width: 340px;
   height: 340px;
   border-radius: 18px;
   background-size: cover;
   background-position: center;
   position: relative;
-  flex-shrink: 0;
+  overflow: hidden;
 }
 
+/* FIXED GRADIENT (no edge bug) */
 .cover-info {
   position: absolute;
   bottom: 0;
-  width: 100%;
+  left: 0;
+  right: 0;
+
   padding: 15px;
-  background: linear-gradient(transparent, rgba(0,0,0,0.7));
-  font-size: 14px;
+
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.6),
+    rgba(0,0,0,0)
+  );
+
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+}
+
+/* POWERED BY */
+.powered-by {
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  font-size: 12px;
+}
+
+.powered-by a {
+  color: #4da3ff;
+  text-decoration: underline;
+}
+
+.powered-by a:hover {
+  opacity: 0.8;
 }
 
 /* MOBILE */
@@ -145,8 +171,8 @@ html, body {
 
   .cover {
     margin-top: 30px;
-    width: 240px;
-    height: 240px;
+    width: 260px;
+    height: 260px;
   }
 
   .track {
@@ -182,6 +208,13 @@ html, body {
     </div>
   </div>
 
+  <!-- POWERED BY -->
+  <div class="powered-by">
+    <a href="https://myradionest.com" target="_blank">
+      Powered By Radio Nest
+    </a>
+  </div>
+
 </div>
 
 <audio id="audio"></audio>
@@ -193,12 +226,13 @@ const streamURL = params.get("stream");
 const metaURL = params.get("meta");
 const logoURL = params.get("logo");
 
+/* LOGO */
 const logoContainer = document.getElementById("logoContainer");
-
 if (logoURL) {
   logoContainer.innerHTML = `<img src="${logoURL}" alt="Logo">`;
 }
 
+/* AUDIO */
 const audio = document.getElementById("audio");
 const playBtn = document.getElementById("playBtn");
 
@@ -214,6 +248,7 @@ playBtn.onclick = () => {
   }
 };
 
+/* METADATA */
 async function fetchMetadata() {
   try {
     const res = await fetch(metaURL);
@@ -238,6 +273,7 @@ async function fetchMetadata() {
   } catch {}
 }
 
+/* ARTWORK */
 async function fetchArtwork(artist, track) {
   try {
     const query = encodeURIComponent(`${artist} ${track}`);
