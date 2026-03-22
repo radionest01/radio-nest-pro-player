@@ -15,11 +15,9 @@ html, body {
   font-family: 'Montserrat', sans-serif;
 }
 
-/* THEME */
 body.dark { color: #000; }
 body.light { color: #fff; }
 
-/* PLAYER */
 .player {
   position: relative;
   max-width: 1200px;
@@ -35,7 +33,6 @@ body.light { color: #fff; }
 body.dark .player { background: rgba(255,255,255,0.6); }
 body.light .player { background: rgba(0,0,0,0.35); }
 
-/* LEFT */
 .content { max-width: 650px; }
 
 .logo img {
@@ -43,7 +40,6 @@ body.light .player { background: rgba(0,0,0,0.35); }
   margin-bottom: 30px;
 }
 
-/* TEXT */
 .on-air {
   font-size: 14px;
   opacity: 0.7;
@@ -62,14 +58,12 @@ body.light .player { background: rgba(0,0,0,0.35); }
   margin-bottom: 30px;
 }
 
-/* CONTROLS */
 .play-row {
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
-/* BUTTON */
 .play-btn {
   padding: 14px 32px;
   border-radius: 999px;
@@ -83,7 +77,6 @@ body.light .player { background: rgba(0,0,0,0.35); }
 body.dark .play-btn { background:#000; color:#fff; }
 body.light .play-btn { background:#fff; color:#000; }
 
-/* MUTE */
 .mute-btn {
   width: 42px;
   height: 42px;
@@ -98,25 +91,17 @@ body.light .play-btn { background:#fff; color:#000; }
 body.dark .mute-btn { background:#000; color:#fff; }
 body.light .mute-btn { background:#fff; color:#000; }
 
-/* SLIDER */
 .volume input {
   width: 140px;
   appearance: none;
   height: 6px;
   border-radius: 10px;
-  outline: none;
   cursor: pointer;
 }
 
-/* TRACK COLORS */
-body.dark .volume input {
-  background: rgba(0,0,0,0.2);
-}
-body.light .volume input {
-  background: rgba(255,255,255,0.3);
-}
+body.dark .volume input { background: rgba(0,0,0,0.2); }
+body.light .volume input { background: rgba(255,255,255,0.3); }
 
-/* 🔴 ALWAYS RED THUMB */
 .volume input::-webkit-slider-thumb {
   appearance: none;
   width: 16px;
@@ -125,13 +110,9 @@ body.light .volume input {
   background: #ff3b3b !important;
 }
 .volume input::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
   background: #ff3b3b !important;
 }
 
-/* ARTWORK */
 .cover {
   width: 340px;
   height: 340px;
@@ -139,10 +120,8 @@ body.light .volume input {
   background-size: cover;
   background-position: center;
   position: relative;
-  overflow: hidden;
 }
 
-/* COVER OVERLAY */
 .cover-info {
   position: absolute;
   bottom: 0;
@@ -153,7 +132,6 @@ body.light .volume input {
   background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
 }
 
-/* POWERED */
 .powered-by {
   position: absolute;
   bottom: 10px;
@@ -166,16 +144,46 @@ body.light .volume input {
   text-decoration: underline;
 }
 
-/* RIPPLE */
 .ripple {
   position: absolute;
   border-radius: 50%;
   transform: scale(0);
   animation: ripple 0.6s linear;
+  pointer-events: none;
 }
 
 @keyframes ripple {
   to { transform: scale(4); opacity: 0; }
+}
+
+/* MOBILE */
+@media (max-width: 900px) {
+  .player {
+    flex-direction: column;
+    text-align: center;
+    padding: 30px 20px;
+  }
+
+  .logo { order: 1; }
+  .play-row { order: 2; justify-content: center; }
+  .cover { order: 3; margin: 25px 0; }
+  .track { order: 4; font-size: 28px; }
+  .artist { order: 5; }
+
+  .mute-btn,
+  .volume { display: none !important; }
+
+  .cover { width: 260px; height: 260px; }
+
+  .play-btn {
+    padding: 18px 40px;
+    font-size: 18px;
+  }
+
+  .powered-by {
+    position: static;
+    margin-top: 20px;
+  }
 }
 </style>
 </head>
@@ -183,7 +191,6 @@ body.light .volume input {
 <body>
 
 <div class="player">
-
   <div class="content">
     <div id="logo" class="logo"></div>
 
@@ -219,7 +226,6 @@ body.light .volume input {
   <div class="powered-by">
     <a href="https://myradionest.com" target="_blank">Powered By Radio Nest</a>
   </div>
-
 </div>
 
 <audio id="audio"></audio>
@@ -234,27 +240,44 @@ const theme = params.get("theme") || "dark";
 
 document.body.classList.add(theme);
 
-/* LOGO */
 if (logoURL) {
   document.getElementById("logo").innerHTML = `<img src="${logoURL}">`;
 }
 
-/* AUDIO */
 const audio = document.getElementById("audio");
-audio.src = streamURL;
 
-/* PLAY */
+/* PLAY (LIVE FIX) */
 const playBtn = document.getElementById("playBtn");
-playBtn.onclick = (e) => {
+playBtn.onclick = async (e) => {
   ripple(e, playBtn);
+
   if (audio.paused) {
-    audio.play();
-    playBtn.textContent = "Stop";
+    try {
+      audio.src = streamURL + "?t=" + Date.now();
+      audio.load();
+      await audio.play();
+      playBtn.textContent = "Stop";
+    } catch {
+      alert("Tap again to start audio");
+    }
   } else {
     audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
     playBtn.textContent = "Play";
   }
 };
+
+/* AUTO RECONNECT */
+audio.addEventListener("error", () => {
+  if (!audio.paused) {
+    setTimeout(() => {
+      audio.src = streamURL + "?t=" + Date.now();
+      audio.load();
+      audio.play().catch(() => {});
+    }, 3000);
+  }
+});
 
 /* MUTE */
 const muteBtn = document.getElementById("muteBtn");
@@ -301,7 +324,7 @@ function ripple(e, el) {
   setTimeout(() => span.remove(), 600);
 }
 
-/* ARTWORK */
+/* ARTWORK + METADATA */
 const FALLBACK = "https://i.ibb.co/8DwvZS9Z/ON-AIR-Fallback-Album-Art.png";
 
 function setFallback() {
@@ -310,15 +333,16 @@ function setFallback() {
 
 async function fetchArtwork(artist, track) {
   try {
-    const query = encodeURIComponent(`${artist} ${track}`);
-    const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=5`);
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artist + " " + track)}&limit=5`);
     const data = await res.json();
 
     if (!data.results.length) return setFallback();
 
-    const match = data.results[0];
-    const art = match.artworkUrl100.replace("100x100","600x600");
+    const match = data.results.find(r =>
+      r.artistName.toLowerCase().includes(artist.toLowerCase())
+    ) || data.results[0];
 
+    const art = match.artworkUrl100.replace("100x100","600x600");
     document.getElementById("cover").style.backgroundImage = `url(${art})`;
 
   } catch {
@@ -326,13 +350,13 @@ async function fetchArtwork(artist, track) {
   }
 }
 
-/* METADATA */
 async function fetchMeta() {
   try {
     const res = await fetch(metaURL);
     const data = await res.json();
 
-    const song = data.icestats.source.title || "";
+    const song = data?.icestats?.source?.title || "Live Stream";
+
     let artist = "", track = song;
 
     if (song.includes(" - ")) {
