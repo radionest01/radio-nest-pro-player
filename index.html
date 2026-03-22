@@ -109,7 +109,7 @@ body.light .mute-btn { background:#fff; color:#000; }
   cursor: pointer;
 }
 
-/* CORRECTED COLORS */
+/* TRACK COLORS */
 body.dark .volume input {
   background: rgba(0,0,0,0.2);
 }
@@ -118,20 +118,22 @@ body.light .volume input {
   background: rgba(255,255,255,0.3);
 }
 
-/* THUMB */
+/* 🔴 RED THUMB */
 .volume input::-webkit-slider-thumb {
   appearance: none;
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: currentColor;
+  background: #ff3b3b;
+  cursor: pointer;
 }
 
 .volume input::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: currentColor;
+  background: #ff3b3b;
+  cursor: pointer;
 }
 
 /* ARTWORK */
@@ -264,7 +266,7 @@ volumeSlider.addEventListener("input", () => {
   updateSlider();
 });
 
-/* CORRECTED SLIDER FILL */
+/* SLIDER FILL */
 function updateSlider() {
   const percent = volumeSlider.value * 100;
 
