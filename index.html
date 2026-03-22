@@ -49,7 +49,6 @@ body.light .player { background: rgba(0,0,0,0.35); }
 .track {
   font-size: 48px;
   font-weight: 800;
-  margin-bottom: 8px;
 }
 
 .artist {
@@ -82,10 +81,10 @@ body.light .play-btn { background:#fff; color:#000; }
   height: 42px;
   border-radius: 50%;
   border: none;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 body.dark .mute-btn { background:#000; color:#fff; }
@@ -102,14 +101,11 @@ body.light .mute-btn { background:#fff; color:#000; }
 body.dark .volume input { background: rgba(0,0,0,0.2); }
 body.light .volume input { background: rgba(255,255,255,0.3); }
 
-.volume input::-webkit-slider-thumb {
-  appearance: none;
+.volume input::-webkit-slider-thumb,
+.volume input::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #ff3b3b !important;
-}
-.volume input::-moz-range-thumb {
   background: #ff3b3b !important;
 }
 
@@ -201,13 +197,11 @@ body.light .volume input { background: rgba(255,255,255,0.3); }
     <div class="play-row">
       <button id="playBtn" class="play-btn">Play</button>
 
-      <!-- FIXED MUTE ICONS -->
       <button id="muteBtn" class="mute-btn">
         <svg id="icon-unmuted" viewBox="0 0 24 24" width="20">
           <path fill="currentColor"
             d="M3 9v6h4l5 5V4L7 9H3zm13 3c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.73 2.5-2.25 2.5-4.02z"/>
         </svg>
-
         <svg id="icon-muted" viewBox="0 0 24 24" width="20" style="display:none;">
           <path fill="currentColor"
             d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0 .77-.2 1.5-.55 2.13l1.46 1.46A5.97 5.97 0 0018.5 12c0-1.77-1-3.29-2.5-4.03v1.67zM19 3l-2 2-2-2-1.5 1.5 2 2-2 2L15 10l2-2 2 2L20.5 8l-2-2 2-2z"/>
@@ -250,17 +244,26 @@ if (logoURL) {
 
 const audio = document.getElementById("audio");
 
-/* PLAY (LIVE FIX) */
+/* PLAY HARD RESET */
 const playBtn = document.getElementById("playBtn");
+
 playBtn.onclick = async (e) => {
   ripple(e, playBtn);
 
   if (audio.paused) {
     try {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+
+      await new Promise(r => setTimeout(r, 150));
+
       audio.src = streamURL + "?t=" + Date.now();
       audio.load();
+
       await audio.play();
       playBtn.textContent = "Stop";
+
     } catch {
       alert("Tap again to start audio");
     }
@@ -328,32 +331,64 @@ function ripple(e, el) {
   setTimeout(() => span.remove(), 600);
 }
 
-/* ARTWORK + METADATA */
+/* FALLBACK */
 const FALLBACK = "https://i.ibb.co/8DwvZS9Z/ON-AIR-Fallback-Album-Art.png";
 
 function setFallback() {
   document.getElementById("cover").style.backgroundImage = `url(${FALLBACK})`;
 }
 
+/* 🔥 DEEP SEARCH ARTWORK */
 async function fetchArtwork(artist, track) {
   try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artist + " " + track)}&limit=5`);
-    const data = await res.json();
+    const clean = str => str.toLowerCase()
+      .replace(/\(.*?\)|\[.*?\]/g, "")
+      .replace(/[^a-z0-9 ]/g, "")
+      .trim();
 
-    if (!data.results.length) return setFallback();
+    const cleanArtist = clean(artist);
+    const cleanTrack = clean(track);
 
-    const match = data.results.find(r =>
-      r.artistName.toLowerCase().includes(artist.toLowerCase())
-    ) || data.results[0];
+    const queries = [`${artist} ${track}`, track, artist];
 
-    const art = match.artworkUrl100.replace("100x100","600x600");
-    document.getElementById("cover").style.backgroundImage = `url(${art})`;
+    for (let q of queries) {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=10`);
+      const data = await res.json();
+      if (!data.results.length) continue;
+
+      let best = null, bestScore = 0;
+
+      data.results.forEach(item => {
+        const a = clean(item.artistName || "");
+        const t = clean(item.trackName || "");
+
+        let score = 0;
+        if (a.includes(cleanArtist)) score += 2;
+        if (t.includes(cleanTrack)) score += 2;
+        if (cleanArtist.includes(a)) score += 1;
+        if (cleanTrack.includes(t)) score += 1;
+
+        if (score > bestScore) {
+          bestScore = score;
+          best = item;
+        }
+      });
+
+      if (best && bestScore >= 2) {
+        const art = best.artworkUrl100.replace("100x100","600x600");
+        document.getElementById("cover").style.backgroundImage = `url(${art})`;
+        return;
+      }
+    }
+
+    setFallback();
 
   } catch {
     setFallback();
   }
 }
 
+/* METADATA */
 async function fetchMeta() {
   try {
     const res = await fetch(metaURL);
