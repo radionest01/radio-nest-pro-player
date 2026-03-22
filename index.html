@@ -253,6 +253,16 @@ playBtn.onclick = () => {
   }
 };
 
+/* 🔥 FALLBACK ART */
+const FALLBACK_ART = "https://i.ibb.co/8DwvZS9Z/ON-AIR-Fallback-Album-Art.png";
+
+function setFallback() {
+  document.getElementById("cover").style.backgroundImage = `url(${FALLBACK_ART})`;
+}
+
+/* show fallback immediately */
+setFallback();
+
 /* METADATA */
 let lastSong = "";
 
@@ -282,10 +292,12 @@ async function fetchMetadata() {
 
     fetchArtwork(artist, track);
 
-  } catch {}
+  } catch {
+    setFallback();
+  }
 }
 
-/* 🔥 IMPROVED ARTWORK (FIXED MATCHING) */
+/* 🔥 IMPROVED ITUNES MATCHING */
 async function fetchArtwork(artist, track) {
   try {
     const cleanTrack = track.replace(/\(.*?\)/g, "").trim();
@@ -296,7 +308,10 @@ async function fetchArtwork(artist, track) {
     const res = await fetch(url);
     const data = await res.json();
 
-    if (!data.results || data.results.length === 0) return;
+    if (!data.results || data.results.length === 0) {
+      setFallback();
+      return;
+    }
 
     const match = data.results.find(item =>
       item.artistName.toLowerCase().includes(artist.toLowerCase()) &&
@@ -307,8 +322,8 @@ async function fetchArtwork(artist, track) {
 
     document.getElementById("cover").style.backgroundImage = `url(${artwork})`;
 
-  } catch (err) {
-    console.log("Artwork error:", err);
+  } catch {
+    setFallback();
   }
 }
 
