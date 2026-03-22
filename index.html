@@ -28,7 +28,6 @@ body.light { color: #000; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   padding: 50px 60px;
   border-radius: 30px;
 
@@ -39,44 +38,22 @@ body.light { color: #000; }
   );
 
   backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-
   border: 1px solid rgba(255,255,255,0.2);
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 
 /* LEFT */
-.content {
-  max-width: 650px;
-}
+.content { max-width: 650px; }
 
-.logo img {
-  max-height: 80px;
-}
+.logo img { max-height: 80px; }
+.logo { margin-bottom: 35px; }
 
-.logo {
-  margin-bottom: 35px;
-}
+.on-air { font-size: 14px; opacity: 0.7; margin-bottom: 10px; }
 
-.on-air {
-  font-size: 14px;
-  opacity: 0.7;
-  margin-bottom: 10px;
-}
+.track { font-size: 48px; font-weight: 800; margin-bottom: 10px; }
+.artist { font-size: 20px; opacity: 0.85; margin-bottom: 30px; }
 
-.track {
-  font-size: 48px;
-  font-weight: 800;
-  margin-bottom: 10px;
-}
-
-.artist {
-  font-size: 20px;
-  opacity: 0.85;
-  margin-bottom: 30px;
-}
-
-/* PLAY */
+/* PLAY BUTTON */
 .play-row {
   display: flex;
   align-items: center;
@@ -90,31 +67,51 @@ body.light { color: #000; }
   border: 3px solid currentColor;
   cursor: pointer;
   position: relative;
+  overflow: hidden;
 }
 
+/* PLAY ICON */
 .play-btn::before {
   content: '';
   position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-40%, -50%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   border-left: 22px solid currentColor;
   border-top: 14px solid transparent;
   border-bottom: 14px solid transparent;
 }
 
+/* STOP ICON */
 .playing::before {
-  border: none;
-  width: 16px;
-  height: 24px;
-  background: currentColor;
-  box-shadow: 10px 0 0 currentColor;
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: currentColor;
 }
 
-.showtime {
-  font-size: 18px;
-  opacity: 0.8;
+/* RIPPLE */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  background: rgba(255,255,255,0.4);
+  animation: ripple-animation 0.6s linear;
+  pointer-events: none;
 }
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.showtime { font-size: 18px; opacity: 0.8; }
 
 /* ARTWORK */
 .cover {
@@ -132,17 +129,8 @@ body.light { color: #000; }
   bottom: 0;
   left: 0;
   right: 0;
-
   padding: 15px;
-
-  background: linear-gradient(
-    to top,
-    rgba(0,0,0,0.6),
-    rgba(0,0,0,0)
-  );
-
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 18px;
+  background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
 }
 
 /* POWERED BY */
@@ -159,10 +147,6 @@ body.light { color: #000; }
   opacity: 0.8;
 }
 
-.powered-by a:hover {
-  opacity: 1;
-}
-
 /* MOBILE */
 @media (max-width: 900px) {
   .player {
@@ -177,9 +161,7 @@ body.light { color: #000; }
     height: 260px;
   }
 
-  .track {
-    font-size: 32px;
-  }
+  .track { font-size: 32px; }
 }
 </style>
 </head>
@@ -188,7 +170,6 @@ body.light { color: #000; }
 
 <div class="player">
 
-  <!-- LEFT -->
   <div class="content">
     <div class="logo" id="logoContainer">Radio Player</div>
 
@@ -202,7 +183,6 @@ body.light { color: #000; }
     </div>
   </div>
 
-  <!-- RIGHT -->
   <div class="cover" id="cover">
     <div class="cover-info">
       <div id="coverTrack"></div>
@@ -210,7 +190,6 @@ body.light { color: #000; }
     </div>
   </div>
 
-  <!-- POWERED BY -->
   <div class="powered-by">
     <a href="https://myradionest.com" target="_blank">
       Powered By Radio Nest
@@ -232,9 +211,9 @@ const theme = params.get("theme") || "dark";
 document.body.classList.add(theme);
 
 /* LOGO */
-const logoContainer = document.getElementById("logoContainer");
 if (logoURL) {
-  logoContainer.innerHTML = `<img src="${logoURL}" alt="Logo">`;
+  document.getElementById("logoContainer").innerHTML =
+    `<img src="${logoURL}" alt="Logo">`;
 }
 
 /* AUDIO */
@@ -243,7 +222,22 @@ const playBtn = document.getElementById("playBtn");
 
 audio.src = streamURL;
 
-playBtn.onclick = () => {
+/* RIPPLE + PLAY */
+playBtn.addEventListener("click", function (e) {
+
+  const ripple = document.createElement("span");
+  ripple.classList.add("ripple");
+
+  const rect = playBtn.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+
+  ripple.style.width = ripple.style.height = size + "px";
+  ripple.style.left = (e.clientX - rect.left - size / 2) + "px";
+  ripple.style.top = (e.clientY - rect.top - size / 2) + "px";
+
+  playBtn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+
   if (audio.paused) {
     audio.play();
     playBtn.classList.add("playing");
@@ -251,33 +245,26 @@ playBtn.onclick = () => {
     audio.pause();
     playBtn.classList.remove("playing");
   }
-};
+});
 
-/* 🔥 FALLBACK ART */
+/* FALLBACK */
 const FALLBACK_ART = "https://i.ibb.co/8DwvZS9Z/ON-AIR-Fallback-Album-Art.png";
 
 function setFallback() {
   document.getElementById("cover").style.backgroundImage = `url(${FALLBACK_ART})`;
 }
 
-/* show fallback immediately */
 setFallback();
 
 /* METADATA */
-let lastSong = "";
-
 async function fetchMetadata() {
   try {
     const res = await fetch(metaURL);
     const data = await res.json();
 
     const song = data.icestats.source.title || "";
-    if (!song || song === lastSong) return;
 
-    lastSong = song;
-
-    let artist = "";
-    let track = song;
+    let artist = "", track = song;
 
     if (song.includes(" - ")) {
       [artist, track] = song.split(" - ");
@@ -297,29 +284,21 @@ async function fetchMetadata() {
   }
 }
 
-/* 🔥 IMPROVED ITUNES MATCHING */
+/* ARTWORK */
 async function fetchArtwork(artist, track) {
   try {
-    const cleanTrack = track.replace(/\(.*?\)/g, "").trim();
-    const query = encodeURIComponent(`${artist} ${cleanTrack}`);
-
-    const url = `https://itunes.apple.com/search?term=${query}&entity=song&limit=5`;
-
-    const res = await fetch(url);
+    const query = encodeURIComponent(`${artist} ${track}`);
+    const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=5`);
     const data = await res.json();
 
-    if (!data.results || data.results.length === 0) {
-      setFallback();
-      return;
-    }
+    if (!data.results.length) return setFallback();
 
     const match = data.results.find(item =>
       item.artistName.toLowerCase().includes(artist.toLowerCase()) &&
-      item.trackName.toLowerCase().includes(cleanTrack.toLowerCase())
+      item.trackName.toLowerCase().includes(track.toLowerCase())
     ) || data.results[0];
 
-    let artwork = match.artworkUrl100.replace("100x100", "600x600");
-
+    const artwork = match.artworkUrl100.replace("100x100", "600x600");
     document.getElementById("cover").style.backgroundImage = `url(${artwork})`;
 
   } catch {
@@ -327,7 +306,6 @@ async function fetchArtwork(artist, track) {
   }
 }
 
-/* INIT */
 fetchMetadata();
 setInterval(fetchMetadata, 10000);
 </script>
