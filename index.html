@@ -145,7 +145,7 @@ body.light { color: #000; }
   border-bottom-right-radius: 18px;
 }
 
-/* POWERED BY (theme-aware) */
+/* POWERED BY */
 .powered-by {
   position: absolute;
   bottom: 12px;
@@ -229,7 +229,6 @@ const metaURL = params.get("meta");
 const logoURL = params.get("logo");
 const theme = params.get("theme") || "dark";
 
-/* APPLY THEME */
 document.body.classList.add(theme);
 
 /* LOGO */
@@ -255,12 +254,17 @@ playBtn.onclick = () => {
 };
 
 /* METADATA */
+let lastSong = "";
+
 async function fetchMetadata() {
   try {
     const res = await fetch(metaURL);
     const data = await res.json();
 
     const song = data.icestats.source.title || "";
+    if (!song || song === lastSong) return;
+
+    lastSong = song;
 
     let artist = "";
     let track = song;
@@ -268,6 +272,8 @@ async function fetchMetadata() {
     if (song.includes(" - ")) {
       [artist, track] = song.split(" - ");
     }
+
+    track = track.replace(/\(.*?\)/g, "").trim();
 
     document.getElementById("track").textContent = track;
     document.getElementById("artist").textContent = artist;
@@ -279,22 +285,34 @@ async function fetchMetadata() {
   } catch {}
 }
 
-/* ARTWORK */
+/* 🔥 IMPROVED ARTWORK (FIXED MATCHING) */
 async function fetchArtwork(artist, track) {
   try {
-    const query = encodeURIComponent(`${artist} ${track}`);
-    const url = `https://itunes.apple.com/search?term=${query}&limit=1`;
+    const cleanTrack = track.replace(/\(.*?\)/g, "").trim();
+    const query = encodeURIComponent(`${artist} ${cleanTrack}`);
+
+    const url = `https://itunes.apple.com/search?term=${query}&entity=song&limit=5`;
 
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data.results.length > 0) {
-      let artwork = data.results[0].artworkUrl100.replace("100x100", "600x600");
-      document.getElementById("cover").style.backgroundImage = `url(${artwork})`;
-    }
-  } catch {}
+    if (!data.results || data.results.length === 0) return;
+
+    const match = data.results.find(item =>
+      item.artistName.toLowerCase().includes(artist.toLowerCase()) &&
+      item.trackName.toLowerCase().includes(cleanTrack.toLowerCase())
+    ) || data.results[0];
+
+    let artwork = match.artworkUrl100.replace("100x100", "600x600");
+
+    document.getElementById("cover").style.backgroundImage = `url(${artwork})`;
+
+  } catch (err) {
+    console.log("Artwork error:", err);
+  }
 }
 
+/* INIT */
 fetchMetadata();
 setInterval(fetchMetadata, 10000);
 </script>
