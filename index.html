@@ -9,9 +9,7 @@
 
 <style>
 html,body{margin:0;padding:0;background:transparent;font-family:'Montserrat',sans-serif}
-
-body.dark{color:#000}
-body.light{color:#fff}
+body.dark{color:#000} body.light{color:#fff}
 
 /* PLAYER */
 .player{
@@ -25,12 +23,10 @@ body.light{color:#fff}
   border-radius:30px;
   backdrop-filter:blur(25px)
 }
-
 body.dark .player{background:rgba(255,255,255,0.6)}
 body.light .player{background:rgba(0,0,0,0.35)}
 
 .logo img{max-height:80px;margin-bottom:30px}
-
 .on-air{font-size:14px;opacity:.7}
 .track{font-size:48px;font-weight:800}
 .artist{font-size:20px;opacity:.85;margin-bottom:30px}
@@ -47,24 +43,17 @@ body.light .player{background:rgba(0,0,0,0.35)}
   position:relative;
   overflow:hidden
 }
-
 body.dark .play-btn{background:#000;color:#fff}
 body.light .play-btn{background:#fff;color:#000}
 
 .mute-btn{
-  width:42px;height:42px;
-  border-radius:50%;
-  border:none;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer
+  width:42px;height:42px;border-radius:50%;
+  border:none;display:flex;align-items:center;justify-content:center;cursor:pointer
 }
-
 body.dark .mute-btn{background:#000;color:#fff}
 body.light .mute-btn{background:#fff;color:#000}
 
-/* SLIDER */
+/* VOLUME */
 .volume input{
   width:140px;
   appearance:none;
@@ -72,7 +61,6 @@ body.light .mute-btn{background:#fff;color:#000}
   border-radius:10px;
   cursor:pointer
 }
-
 body.dark .volume input{background:rgba(0,0,0,.2)}
 body.light .volume input{background:rgba(255,255,255,.3)}
 
@@ -107,7 +95,6 @@ body.light .volume input{background:rgba(255,255,255,.3)}
   right:20px;
   font-size:12px
 }
-
 .powered-by a{color:currentColor;text-decoration:underline}
 
 /* RIPPLE */
@@ -118,36 +105,19 @@ body.light .volume input{background:rgba(255,255,255,.3)}
   animation:ripple .6s linear;
   pointer-events:none
 }
-
-@keyframes ripple{
-  to{transform:scale(4);opacity:0}
-}
+@keyframes ripple{to{transform:scale(4);opacity:0}}
 
 /* MOBILE */
 @media(max-width:900px){
-  .player{
-    flex-direction:column;
-    text-align:center;
-    padding:30px 20px
-  }
-
+  .player{flex-direction:column;text-align:center;padding:30px 20px}
   .logo{order:1}
   .play-row{order:2;justify-content:center}
   .cover{order:3;margin:25px 0;width:260px;height:260px}
   .track{order:4;font-size:28px}
   .artist{order:5}
-
   .mute-btn,.volume{display:none!important}
-
-  .play-btn{
-    padding:18px 40px;
-    font-size:18px
-  }
-
-  .powered-by{
-    position:static;
-    margin-top:20px
-  }
+  .play-btn{padding:18px 40px;font-size:18px}
+  .powered-by{position:static;margin-top:20px}
 }
 </style>
 </head>
@@ -177,7 +147,13 @@ async function validateLicense(){
 
     if(!data[key])return false;
 
-    return new Date(data[key])>=new Date();
+    const expiry=new Date(data[key]);
+    const today=new Date();
+
+    expiry.setHours(23,59,59,999);
+    today.setHours(0,0,0,0);
+
+    return expiry>=today;
 
   }catch{return false}
 }
@@ -277,15 +253,11 @@ playBtn.onclick=async(e)=>{
     audio.pause();
     audio.removeAttribute("src");
     audio.load();
-
     await new Promise(r=>setTimeout(r,150));
-
     audio.src=streamURL+"?t="+Date.now();
     audio.load();
-
     await audio.play();
     playBtn.textContent="Stop";
-
   }else{
     audio.pause();
     audio.removeAttribute("src");
@@ -318,10 +290,7 @@ muteBtn.onclick=()=>{
 
 /* VOLUME */
 const volumeSlider=document.getElementById("volumeSlider");
-
-volumeSlider.oninput=()=>{
-  audio.volume=volumeSlider.value;
-};
+volumeSlider.oninput=()=>audio.volume=volumeSlider.value;
 
 /* RIPPLE */
 function ripple(e,el){
@@ -354,21 +323,60 @@ function setFallback(){
   updateMediaSession("Live Stream","",FALLBACK);
 }
 
-/* ARTWORK */
-async function fetchArtwork(artist,track){
-  updateMediaSession(track,artist,FALLBACK);
+/* 🔥 DEEP ARTWORK */
+async function fetchArtwork(artist, track){
+
+  updateMediaSession(track, artist, FALLBACK);
 
   try{
-    const res=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artist+" "+track)}&limit=10`);
-    const data=await res.json();
 
-    if(data.results.length){
-      const art=data.results[0].artworkUrl100.replace("100x100","600x600");
-      document.getElementById("cover").style.backgroundImage=`url(${art})`;
-      updateMediaSession(track,artist,art);
-    }else setFallback();
+    const clean=str=>str.toLowerCase()
+      .replace(/\(.*?\)|\[.*?\]/g,"")
+      .replace(/[^a-z0-9 ]/g,"")
+      .trim();
 
-  }catch{setFallback();}
+    const cleanArtist=clean(artist);
+    const cleanTrack=clean(track);
+
+    const queries=[`${artist} ${track}`,track,artist];
+
+    for(let q of queries){
+
+      const res=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=10`);
+      const data=await res.json();
+
+      let best=null,bestScore=0;
+
+      data.results.forEach(item=>{
+        let score=0;
+
+        const a=clean(item.artistName||"");
+        const t=clean(item.trackName||"");
+
+        if(a.includes(cleanArtist))score+=2;
+        if(t.includes(cleanTrack))score+=2;
+        if(cleanArtist.includes(a))score+=1;
+        if(cleanTrack.includes(t))score+=1;
+
+        if(score>bestScore){
+          bestScore=score;
+          best=item;
+        }
+      });
+
+      if(best && bestScore>=2){
+        const art=best.artworkUrl100.replace("100x100","600x600");
+        document.getElementById("cover").style.backgroundImage=`url(${art})`;
+        updateMediaSession(track,artist,art);
+        return;
+      }
+    }
+
+    setFallback();
+
+  }catch{
+    setFallback();
+  }
 }
 
 /* META */
@@ -384,6 +392,9 @@ async function fetchMeta(){
     if(song.includes(" - ")){
       [artist,track]=song.split(" - ");
     }
+
+    track=track.replace(/\(.*?\)/g,"").trim();
+    artist=artist.trim();
 
     document.getElementById("track").textContent=track;
     document.getElementById("artist").textContent=artist;
