@@ -15,6 +15,10 @@ html, body {
   font-family: 'Montserrat', sans-serif;
 }
 
+/* THEME */
+body.dark { color: #fff; }
+body.light { color: #000; }
+
 /* PLAYER */
 .player {
   position: relative;
@@ -39,8 +43,6 @@ html, body {
 
   border: 1px solid rgba(255,255,255,0.2);
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-
-  color: #fff;
 }
 
 /* LEFT */
@@ -85,7 +87,7 @@ html, body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 3px solid white;
+  border: 3px solid currentColor;
   cursor: pointer;
   position: relative;
 }
@@ -95,7 +97,7 @@ html, body {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-40%, -50%);
-  border-left: 22px solid white;
+  border-left: 22px solid currentColor;
   border-top: 14px solid transparent;
   border-bottom: 14px solid transparent;
 }
@@ -104,8 +106,8 @@ html, body {
   border: none;
   width: 16px;
   height: 24px;
-  background: white;
-  box-shadow: 10px 0 0 white;
+  background: currentColor;
+  box-shadow: 10px 0 0 currentColor;
   transform: translate(-50%, -50%);
 }
 
@@ -125,7 +127,6 @@ html, body {
   overflow: hidden;
 }
 
-/* FIXED GRADIENT (no edge bug) */
 .cover-info {
   position: absolute;
   bottom: 0;
@@ -144,7 +145,7 @@ html, body {
   border-bottom-right-radius: 18px;
 }
 
-/* POWERED BY */
+/* POWERED BY (theme-aware) */
 .powered-by {
   position: absolute;
   bottom: 12px;
@@ -153,12 +154,13 @@ html, body {
 }
 
 .powered-by a {
-  color: #4da3ff;
+  color: currentColor;
   text-decoration: underline;
+  opacity: 0.8;
 }
 
 .powered-by a:hover {
-  opacity: 0.8;
+  opacity: 1;
 }
 
 /* MOBILE */
@@ -225,6 +227,10 @@ const params = new URLSearchParams(window.location.search);
 const streamURL = params.get("stream");
 const metaURL = params.get("meta");
 const logoURL = params.get("logo");
+const theme = params.get("theme") || "dark";
+
+/* APPLY THEME */
+document.body.classList.add(theme);
 
 /* LOGO */
 const logoContainer = document.getElementById("logoContainer");
