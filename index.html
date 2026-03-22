@@ -71,32 +71,36 @@ body.light { color: #000; }
   overflow: hidden;
 }
 
-/* PLAY ICON (BALANCED) */
+/* 🔥 PLAY ICON (CLIP-PATH FIX) */
 .play-btn::before {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
 
-  transform: translate(-45%, -50%);
+  width: 40px;
+  height: 40px;
 
-  border-left: 26px solid currentColor;
-  border-top: 16px solid transparent;
-  border-bottom: 16px solid transparent;
+  background: currentColor;
+
+  transform: translate(-42%, -50%);
+
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
-/* STOP ICON */
+/* 🔥 STOP ICON */
 .playing::before {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
 
-  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
 
-  width: 20px;
-  height: 20px;
   background: currentColor;
+
+  transform: translate(-50%, -50%);
 }
 
 /* RIPPLE */
@@ -180,7 +184,6 @@ body.light { color: #000; }
 
 <div class="player">
 
-  <!-- LEFT -->
   <div class="content">
     <div class="logo" id="logoContainer">Radio Player</div>
 
@@ -194,7 +197,6 @@ body.light { color: #000; }
     </div>
   </div>
 
-  <!-- RIGHT -->
   <div class="cover" id="cover">
     <div class="cover-info">
       <div id="coverTrack"></div>
@@ -202,7 +204,6 @@ body.light { color: #000; }
     </div>
   </div>
 
-  <!-- POWERED BY -->
   <div class="powered-by">
     <a href="https://myradionest.com" target="_blank">
       Powered By Radio Nest
