@@ -15,7 +15,7 @@ html, body {
   font-family: 'Montserrat', sans-serif;
 }
 
-/* ✅ FIXED THEME */
+/* THEME (FLIPPED CORRECTLY) */
 body.dark { color: #000; }
 body.light { color: #fff; }
 
@@ -26,64 +26,89 @@ body.light { color: #fff; }
   max-width: 1200px;
   margin: 40px auto;
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 50px 60px;
   border-radius: 30px;
-
   backdrop-filter: blur(25px);
   border: 1px solid rgba(255,255,255,0.2);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 
-/* ✅ GLASS ADAPTS TO THEME */
-body.dark .player {
-  background: rgba(255,255,255,0.6);
-}
+/* GLASS */
+body.dark .player { background: rgba(255,255,255,0.6); }
+body.light .player { background: rgba(0,0,0,0.35); }
 
-body.light .player {
-  background: rgba(0,0,0,0.35);
-}
-
-/* LEFT */
-.content { max-width: 650px; }
-
-.logo img { max-height: 80px; }
-.logo { margin-bottom: 35px; }
-
-.on-air { font-size: 14px; opacity: 0.7; margin-bottom: 10px; }
-
-.track { font-size: 48px; font-weight: 800; margin-bottom: 10px; }
-.artist { font-size: 20px; opacity: 0.85; margin-bottom: 30px; }
+/* TEXT */
+.track { font-size: 48px; font-weight: 800; }
+.artist { font-size: 20px; opacity: 0.85; }
 
 /* BUTTON */
 .play-btn {
   padding: 14px 32px;
   border-radius: 999px;
-  font-size: 18px;
+  border: none;
   font-weight: 600;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  border: none;
-
-  transition: transform 0.15s ease, background 0.2s, color 0.2s;
 }
 
 /* BUTTON THEMES */
-body.dark .play-btn {
-  background: #000;
-  color: #fff;
+body.dark .play-btn { background:#000; color:#fff; }
+body.light .play-btn { background:#fff; color:#000; }
+
+/* ROW */
+.play-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
-body.light .play-btn {
-  background: #fff;
-  color: #000;
+/* MUTE BUTTON */
+.mute-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
 }
 
-.play-btn:hover {
-  transform: scale(1.05);
-  opacity: 0.9;
+body.dark .mute-btn { background:#000; color:#fff; }
+body.light .mute-btn { background:#fff; color:#000; }
+
+/* SLIDER */
+.volume input {
+  width: 140px;
+  appearance: none;
+  height: 6px;
+  border-radius: 10px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* TRACK BG */
+body.dark .volume input {
+  background: rgba(0,0,0,0.2);
+}
+body.light .volume input {
+  background: rgba(255,255,255,0.3);
+}
+
+/* THUMB */
+.volume input::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.volume input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* RIPPLE */
@@ -91,23 +116,15 @@ body.light .play-btn {
   position: absolute;
   border-radius: 50%;
   transform: scale(0);
-  animation: ripple-animation 0.6s linear;
+  animation: ripple 0.6s linear;
   pointer-events: none;
 }
 
-body.dark .ripple {
-  background: rgba(0,0,0,0.2);
-}
+body.dark .ripple { background: rgba(0,0,0,0.2); }
+body.light .ripple { background: rgba(255,255,255,0.3); }
 
-body.light .ripple {
-  background: rgba(255,255,255,0.3);
-}
-
-@keyframes ripple-animation {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
+@keyframes ripple {
+  to { transform: scale(4); opacity: 0; }
 }
 
 /* ARTWORK */
@@ -117,24 +134,13 @@ body.light .ripple {
   border-radius: 18px;
   background-size: cover;
   background-position: center;
-  position: relative;
   overflow: hidden;
 }
 
-.cover-info {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 15px;
-  background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
-  color: #fff; /* always readable on artwork */
-}
-
-/* POWERED BY */
+/* POWERED */
 .powered-by {
   position: absolute;
-  bottom: 12px;
+  bottom: 10px;
   right: 20px;
   font-size: 12px;
 }
@@ -142,25 +148,8 @@ body.light .ripple {
 .powered-by a {
   color: currentColor;
   text-decoration: underline;
-  opacity: 0.8;
 }
 
-/* MOBILE */
-@media (max-width: 900px) {
-  .player {
-    flex-direction: column;
-    text-align: center;
-    padding: 30px;
-  }
-
-  .cover {
-    margin-top: 30px;
-    width: 260px;
-    height: 260px;
-  }
-
-  .track { font-size: 32px; }
-}
 </style>
 </head>
 
@@ -168,27 +157,25 @@ body.light .ripple {
 
 <div class="player">
 
-  <div class="content">
-    <div class="logo" id="logoContainer">Radio Player</div>
+  <div>
+    <div id="track" class="track">Loading...</div>
+    <div id="artist" class="artist">Please wait</div>
 
-    <div class="on-air">ON AIR NOW</div>
-    <div class="track" id="track">Loading...</div>
-    <div class="artist" id="artist">Please wait</div>
+    <div class="play-row">
+      <button id="playBtn" class="play-btn">Play</button>
 
-    <button id="playBtn" class="play-btn">Play</button>
-  </div>
+      <button id="muteBtn" class="mute-btn">🔊</button>
 
-  <div class="cover" id="cover">
-    <div class="cover-info">
-      <div id="coverTrack"></div>
-      <div id="coverArtist"></div>
+      <div class="volume">
+        <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="1">
+      </div>
     </div>
   </div>
 
+  <div id="cover" class="cover"></div>
+
   <div class="powered-by">
-    <a href="https://myradionest.com" target="_blank">
-      Powered By Radio Nest
-    </a>
+    <a href="https://myradionest.com" target="_blank">Powered By Radio Nest</a>
   </div>
 
 </div>
@@ -200,38 +187,21 @@ const params = new URLSearchParams(window.location.search);
 
 const streamURL = params.get("stream");
 const metaURL = params.get("meta");
-const logoURL = params.get("logo");
 const theme = params.get("theme") || "dark";
 
 document.body.classList.add(theme);
 
-/* LOGO */
-if (logoURL) {
-  document.getElementById("logoContainer").innerHTML =
-    `<img src="${logoURL}" alt="Logo">`;
-}
-
-/* AUDIO */
 const audio = document.getElementById("audio");
 const playBtn = document.getElementById("playBtn");
+const muteBtn = document.getElementById("muteBtn");
+const volumeSlider = document.getElementById("volumeSlider");
 
 audio.src = streamURL;
+audio.volume = 1;
 
-/* CLICK */
-playBtn.addEventListener("click", function (e) {
-
-  const ripple = document.createElement("span");
-  ripple.classList.add("ripple");
-
-  const rect = playBtn.getBoundingClientRect();
-  const size = Math.max(rect.width, rect.height);
-
-  ripple.style.width = ripple.style.height = size + "px";
-  ripple.style.left = (e.clientX - rect.left - size / 2) + "px";
-  ripple.style.top = (e.clientY - rect.top - size / 2) + "px";
-
-  playBtn.appendChild(ripple);
-  setTimeout(() => ripple.remove(), 600);
+/* PLAY */
+playBtn.onclick = (e) => {
+  ripple(e, playBtn);
 
   if (audio.paused) {
     audio.play();
@@ -240,69 +210,67 @@ playBtn.addEventListener("click", function (e) {
     audio.pause();
     playBtn.textContent = "Play";
   }
+};
+
+/* MUTE */
+muteBtn.onclick = () => {
+  audio.muted = !audio.muted;
+  muteBtn.textContent = audio.muted ? "🔇" : "🔊";
+};
+
+/* VOLUME */
+volumeSlider.addEventListener("input", () => {
+  audio.volume = volumeSlider.value;
+  updateSlider();
 });
 
-/* FALLBACK */
-const FALLBACK_ART = "https://i.ibb.co/8DwvZS9Z/ON-AIR-Fallback-Album-Art.png";
-
-function setFallback() {
-  document.getElementById("cover").style.backgroundImage = `url(${FALLBACK_ART})`;
+/* ANIMATE SLIDER */
+function updateSlider() {
+  const percent = volumeSlider.value * 100;
+  volumeSlider.style.background =
+    `linear-gradient(to right, currentColor ${percent}%, rgba(255,255,255,0.2) ${percent}%)`;
 }
 
-setFallback();
+updateSlider();
+
+/* RIPPLE */
+function ripple(e, el) {
+  const span = document.createElement("span");
+  span.className = "ripple";
+
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+
+  span.style.width = span.style.height = size + "px";
+  span.style.left = (e.clientX - rect.left - size / 2) + "px";
+  span.style.top = (e.clientY - rect.top - size / 2) + "px";
+
+  el.appendChild(span);
+  setTimeout(() => span.remove(), 600);
+}
+
+/* FALLBACK */
+const FALLBACK = "https://i.ibb.co/8DwvZS9Z/ON-AIR-Fallback-Album-Art.png";
+document.getElementById("cover").style.backgroundImage = `url(${FALLBACK})`;
 
 /* METADATA */
-async function fetchMetadata() {
+async function fetchMeta() {
   try {
     const res = await fetch(metaURL);
     const data = await res.json();
-
     const song = data.icestats.source.title || "";
 
-    let artist = "", track = song;
+    let [artist, track] = song.split(" - ");
 
-    if (song.includes(" - ")) {
-      [artist, track] = song.split(" - ");
-    }
+    document.getElementById("track").textContent = track || song;
+    document.getElementById("artist").textContent = artist || "";
 
-    track = track.replace(/\(.*?\)/g, "").trim();
-
-    document.getElementById("track").textContent = track;
-    document.getElementById("artist").textContent = artist;
-    document.getElementById("coverTrack").textContent = track;
-    document.getElementById("coverArtist").textContent = artist;
-
-    fetchArtwork(artist, track);
-
-  } catch {
-    setFallback();
-  }
+  } catch {}
 }
 
-/* ARTWORK */
-async function fetchArtwork(artist, track) {
-  try {
-    const query = encodeURIComponent(`${artist} ${track}`);
-    const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=5`);
-    const data = await res.json();
+fetchMeta();
+setInterval(fetchMeta, 10000);
 
-    if (!data.results.length) return setFallback();
-
-    const match = data.results.find(item =>
-      item.artistName.toLowerCase().includes(artist.toLowerCase()) &&
-      item.trackName.toLowerCase().includes(track.toLowerCase())
-    ) || data.results[0];
-
-    const artwork = match.artworkUrl100.replace("100x100", "600x600");
-    document.getElementById("cover").style.backgroundImage = `url(${artwork})`;
-
-  } catch {
-    setFallback();
-  }
-}
-
-fetchMetadata();
-setInterval(fetchMetadata, 10000);
 </script>
 
 </body>
